@@ -1,0 +1,67 @@
+// Function simulates a fiery explosion that sets buildings
+// in explosion radius on fire.
+
+defineVariable(Building, _explosion_exploded_building_data);
+defineVariable(int, _explosion_buildings_count);
+defineVariable(int, _explosion_buildings_index);
+defineVariable(float, _explosion_difference_x);
+defineVariable(float, _explosion_difference_y);
+defineVariable(float, _explosion_radius_pow_2);
+defineVariable(float, _explosion_legs_pow_2);
+defineVariable(Building, _explosion_checked_building);
+defineVariable(int, _explosion_buildings_to_be_set_on_fire_count);
+defineArray(int[200], _explosion_buildings_to_be_set_on_fire);
+defineVariable(int, _explosion_counter);
+
+defineFunction(Explode, void, int:_exploded_building_index, float:_explosion_radius)
+{
+	// Start fires in the building and buildings around it
+	_explosion_exploded_building_data.GetDataByIndex(_exploded_building_index);
+	Building_GetNumberOfBuildings(_explosion_buildings_count);
+	_explosion_buildings_index = 0;
+    _explosion_buildings_to_be_set_on_fire_count = 0;
+	_explosion_radius_pow_2 = _explosion_radius * _explosion_radius;
+	// Filter out buildings that are not in the radius of the explosion
+	// Use the BOX to figure out which buildings can be in the radius, as comparison
+	// is far cheaper than goniometric functions
+	while (_explosion_buildings_index < _explosion_buildings_count) {
+		_explosion_checked_building.GetDataByIndex(_explosion_buildings_index);
+		_explosion_difference_x = _explosion_exploded_building_data.vPosition.x - _explosion_checked_building.vPosition.x;
+		if (_explosion_difference_x < 0) {
+			_explosion_difference_x = -1 * _explosion_difference_x;
+		}
+		if (_explosion_difference_x < _explosion_radius) {
+			_explosion_difference_y = _explosion_exploded_building_data.vPosition.y - _explosion_checked_building.vPosition.y;
+			if (_explosion_difference_y < 0) {
+				_explosion_difference_y = -1 * _explosion_difference_y;
+			}
+			if (_explosion_difference_y < _explosion_radius) {
+				// We use Pythagorean theorem here.
+				// We do not have square root function yet, so what we do is that we test
+				// if x^2 + y^2 are bigger than _explosion_radius^2, as if the hypotenuse
+				// is shorter than _explosion_radius, then the sum of square over legs has
+				// to be smaller than the _explosion_radius on the power of two
+				_explosion_legs_pow_2 = _explosion_difference_x * _explosion_difference_x + _explosion_difference_y * _explosion_difference_y;
+				if ( _explosion_radius_pow_2 > _explosion_legs_pow_2 ) {
+                    // TODO: set them on fire at once
+                    _explosion_buildings_to_be_set_on_fire[_explosion_buildings_to_be_set_on_fire_count] = _explosion_buildings_index;
+                    _explosion_buildings_to_be_set_on_fire_count = _explosion_buildings_to_be_set_on_fire_count + 1;
+                    // If we have 200 buildings to set on fire, we stop as we would leak out of array
+                    if (_explosion_buildings_to_be_set_on_fire_count > 199) {
+                        _explosion_buildings_index = _explosion_buildings_count;
+                    }
+				}
+			}
+		}
+        
+		_explosion_buildings_index = _explosion_buildings_index + 1;
+	}
+    Script_EnterCriticalSection();
+    _explosion_counter = 0;
+	while (_explosion_counter < _explosion_buildings_to_be_set_on_fire_count) {
+        Building_StartFire(_explosion_buildings_to_be_set_on_fire[_explosion_counter]);
+        _explosion_counter = _explosion_counter + 1;
+    }
+    Script_LeaveCriticalSection();
+	returnVoid();
+}

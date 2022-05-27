@@ -1,0 +1,24 @@
+include("SOVIETInstructions.txt");
+include("src/Math.txt");
+include("src/Explosion.txt");
+include("src/disasters/FuelTankExplosion.txt");
+
+
+defineVariable(int, RANDOM_VALUE);
+
+
+defineFunction(main, void)
+{
+	InitConstants();
+	Script_SetContinuous(1);
+
+	// Roll a dice on fuel tank explosion
+	Random(RANDOM_VALUE);
+	RANDOM_VALUE = RANDOM_VALUE % 20;
+	if (RANDOM_VALUE < 1) {
+		FuelTankExplosion_Simulate();
+	}
+	Script_Sleep(120.0);
+
+    end();
+}
