@@ -1,0 +1,135 @@
+// Simulate a fuel tank explosion if a fuel tank is full of vapors
+
+
+defineVariable(int, _fuel_tank_explosion_exploded_buildings_index);
+defineVariable(Building, _fuel_tank_explosion_exploded_building);
+defineVariable(int, _fuel_tank_explosion_buildings_count);
+defineVariable(int, _fuel_tank_explosion_building_index);
+defineVariable(Building, _fuel_tank_explosion_checked_building);
+defineVariable(Resources, _fuel_tank_explosion_checked_building_resources_actual);
+defineVariable(Resources, _fuel_tank_explosion_checked_building_resources_capacity);
+defineArray(int[100], _fuel_tank_explosion_possible_buildings);
+defineVariable(int, _fuel_tank_explosion_possible_buildings_count);
+defineVariable(int, _fuel_tank_explosion_random_value);
+defineVariable(int, _fuel_tank_explosion_check);
+defineVariable(float, _fuel_tank_explosion_explosion_size);
+
+
+// Find a tank that contains less that stores less than 50% of its fuel/oil/bitumen
+// capacity and stores at least some fuel/oil/bitumen.
+//
+// Returns -1 if no such building exists.
+defineFunction(_FuelTankExplosion_FindValidFuelTank, int) {
+	Building_GetNumberOfBuildings(_fuel_tank_explosion_buildings_count);
+	_fuel_tank_explosion_building_index = 0;
+	_fuel_tank_explosion_possible_buildings_count = 0;
+	while (_fuel_tank_explosion_building_index < _fuel_tank_explosion_buildings_count) {
+		_fuel_tank_explosion_checked_building.GetDataByIndex(_fuel_tank_explosion_building_index);
+		// TODO: Equal to 5
+		if ( _fuel_tank_explosion_checked_building.nType > 4 & _fuel_tank_explosion_checked_building.nType < 6 ) {
+			_fuel_tank_explosion_check = 1;
+			_fuel_tank_explosion_checked_building_resources_actual.GetFromBuilding(_fuel_tank_explosion_building_index);
+			_fuel_tank_explosion_checked_building_resources_capacity.GetCapacityFromBuilding(_fuel_tank_explosion_building_index);
+			if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {				
+				if (_fuel_tank_explosion_checked_building_resources_actual.oil / _fuel_tank_explosion_checked_building_resources_capacity.oil < 0.50) {
+					if (_fuel_tank_explosion_possible_buildings_count < 100) {
+						_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
+						_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
+					}
+					else () {
+						Random(_fuel_tank_explosion_random_value);
+						_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % 100] = _fuel_tank_explosion_building_index;
+					}
+					_fuel_tank_explosion_check = 0;
+				}
+			}
+			if ( _fuel_tank_explosion_check ) {
+				if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
+					if (_fuel_tank_explosion_checked_building_resources_actual.fuel / _fuel_tank_explosion_checked_building_resources_capacity.fuel < 0.50) {
+						if (_fuel_tank_explosion_possible_buildings_count < 100) {
+							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
+							_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
+						}
+						else () {
+							Random(_fuel_tank_explosion_random_value);
+							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % 100] = _fuel_tank_explosion_building_index;
+						}
+					}
+					_fuel_tank_explosion_check = 0;
+				}
+			}
+			if ( _fuel_tank_explosion_check ) {
+				if (_fuel_tank_explosion_checked_building_resources_actual.bitumen > 0) {
+					if (_fuel_tank_explosion_checked_building_resources_actual.bitumen / _fuel_tank_explosion_checked_building_resources_capacity.bitumen < 0.50) {
+						if (_fuel_tank_explosion_possible_buildings_count < 100) {
+							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
+							_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
+						}
+						else () {
+							Random(_fuel_tank_explosion_random_value);
+							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % 100] = _fuel_tank_explosion_building_index;
+						}
+					}
+				}
+			}
+		}
+		_fuel_tank_explosion_building_index = _fuel_tank_explosion_building_index + 1;
+	}
+	if (_fuel_tank_explosion_possible_buildings_count < 1) {
+		return (-1);
+	}
+	Random(_fuel_tank_explosion_random_value);
+	return( _fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % _fuel_tank_explosion_possible_buildings_count] );
+}
+
+
+// Determine the size of a explosion
+defineFunction(_FuelTankExplosion_DetermineExplosionSize, float, int:_fuel_tank_explosion_determine_building_index) {
+    _fuel_tank_explosion_explosion_size = 0.0;
+    _fuel_tank_explosion_checked_building.GetDataByIndex(_fuel_tank_explosion_determine_building_index);
+    _fuel_tank_explosion_checked_building_resources_actual.GetFromBuilding(_fuel_tank_explosion_determine_building_index);
+    _fuel_tank_explosion_checked_building_resources_capacity.GetCapacityFromBuilding(_fuel_tank_explosion_determine_building_index);
+    if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {				
+        _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
+    }
+    if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
+        _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
+    }
+    if (_fuel_tank_explosion_checked_building_resources_actual.bitumen > 0) {
+        _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
+    }
+    // TODO: Chemicals cause bigger explosion
+    return( _fuel_tank_explosion_explosion_size );
+}
+
+
+defineFunction(FuelTankExplosion_Simulate, void)
+{
+	// Decide which building should explode
+	// And what is the explosion size
+	_fuel_tank_explosion_exploded_buildings_index = _FuelTankExplosion_FindValidFuelTank();
+	// We were not able to find a valid building
+	if (_fuel_tank_explosion_exploded_buildings_index < 0) {
+	 	returnVoid();
+	}
+
+    // Determine explosion size
+    _fuel_tank_explosion_explosion_size = _FuelTankExplosion_DetermineExplosionSize(_fuel_tank_explosion_exploded_buildings_index);
+	if (_fuel_tank_explosion_explosion_size < 1.0) {
+	 	returnVoid();
+	}
+
+	// Create notification
+	_fuel_tank_explosion_exploded_building.GetDataByIndex(_fuel_tank_explosion_exploded_buildings_index);
+	Notification_CreateNewStringPic(
+		"Big explosion!",
+		"Vapors in a tank caused an explosion that set the tank and the nearby buildings on fire.",
+		"big_explosion.png",
+		_fuel_tank_explosion_exploded_building.vPosition
+	)
+
+	// Start fires
+	Explode(_fuel_tank_explosion_exploded_buildings_index, _fuel_tank_explosion_explosion_size);
+
+    returnVoid();
+}

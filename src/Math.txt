@@ -1,0 +1,19 @@
+// MATH helper functions
+
+// Return absolute value of the a float
+defineFunction(AbsFloat, float, float:_abs_float_value)
+{
+    if (_abs_float_value < 0) {
+        _abs_float_value = -1 * _abs_float_value;
+    }
+	return ( _abs_float_value );
+}
+
+// Return absolute value of the a integer
+defineFunction(AbsInt, int, int:_abs_int_value)
+{
+    if (_abs_int_value < 0) {
+        _abs_int_value = -1 * _abs_int_value;
+    }
+	return ( _abs_int_value );
+}
