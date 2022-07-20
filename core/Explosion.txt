@@ -43,7 +43,6 @@ defineFunction(Explode, void, int:_exploded_building_index, float:_explosion_rad
 				// to be smaller than the _explosion_radius on the power of two
 				_explosion_legs_pow_2 = _explosion_difference_x * _explosion_difference_x + _explosion_difference_y * _explosion_difference_y;
 				if ( _explosion_radius_pow_2 > _explosion_legs_pow_2 ) {
-                    // TODO: set them on fire at once
                     _explosion_buildings_to_be_set_on_fire[_explosion_buildings_to_be_set_on_fire_count] = _explosion_buildings_index;
                     _explosion_buildings_to_be_set_on_fire_count = _explosion_buildings_to_be_set_on_fire_count + 1;
                     // If we have 200 buildings to set on fire, we stop as we would leak out of array

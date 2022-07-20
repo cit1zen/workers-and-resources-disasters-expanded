@@ -1,0 +1,12 @@
+include("core/SOVIETInstructions.txt");
+include("core/Math.txt");
+include("core/Explosion.txt");
+include("disasters/FuelTankExplosion.txt");
+
+
+defineFunction(main, void)
+{
+	InitConstants();
+	FuelTankExplosion_Simulate();
+    end();
+}
