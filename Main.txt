@@ -1,7 +1,7 @@
-include("SOVIETInstructions.txt");
-include("src/Math.txt");
-include("src/Explosion.txt");
-include("src/disasters/FuelTankExplosion.txt");
+include("core/SOVIETInstructions.txt");
+include("core/Math.txt");
+include("core/Explosion.txt");
+include("disasters/FuelTankExplosion.txt");
 
 
 defineVariable(int, RANDOM_VALUE);
@@ -18,7 +18,7 @@ defineFunction(main, void)
 	if (RANDOM_VALUE < 1) {
 		FuelTankExplosion_Simulate();
 	}
-	Script_Sleep(120.0);
+	Script_Sleep(60.0);
 
     end();
 }

@@ -1,6 +1,4 @@
 // Simulate a fuel tank explosion if a fuel tank is full of vapors
-
-
 defineVariable(int, _fuel_tank_explosion_exploded_buildings_index);
 defineVariable(Building, _fuel_tank_explosion_exploded_building);
 defineVariable(int, _fuel_tank_explosion_buildings_count);
@@ -58,20 +56,6 @@ defineFunction(_FuelTankExplosion_FindValidFuelTank, int) {
 					_fuel_tank_explosion_check = 0;
 				}
 			}
-			if ( _fuel_tank_explosion_check ) {
-				if (_fuel_tank_explosion_checked_building_resources_actual.bitumen > 0) {
-					if (_fuel_tank_explosion_checked_building_resources_actual.bitumen / _fuel_tank_explosion_checked_building_resources_capacity.bitumen < 0.50) {
-						if (_fuel_tank_explosion_possible_buildings_count < 100) {
-							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
-							_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
-						}
-						else () {
-							Random(_fuel_tank_explosion_random_value);
-							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % 100] = _fuel_tank_explosion_building_index;
-						}
-					}
-				}
-			}
 		}
 		_fuel_tank_explosion_building_index = _fuel_tank_explosion_building_index + 1;
 	}
@@ -93,9 +77,6 @@ defineFunction(_FuelTankExplosion_DetermineExplosionSize, float, int:_fuel_tank_
         _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
     }
     if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
-        _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
-    }
-    if (_fuel_tank_explosion_checked_building_resources_actual.bitumen > 0) {
         _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
     }
     // TODO: Chemicals cause bigger explosion
@@ -124,7 +105,7 @@ defineFunction(FuelTankExplosion_Simulate, void)
 	Notification_CreateNewStringPic(
 		"Big explosion!",
 		"Vapors in a tank caused an explosion that set the tank and the nearby buildings on fire.",
-		"big_explosion.png",
+		"icons/fuel_tank_explosion.jpg",
 		_fuel_tank_explosion_exploded_building.vPosition
 	)
 
