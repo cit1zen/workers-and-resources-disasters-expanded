@@ -1,16 +1,12 @@
 # Workers & Resources: Disaster Expanded
 
-Script mod that adds more meaningfull disasters to [Workers & Resources: Soviet Republic][steam_page].
-Note that this script mod is highly experimental.
+Script mod adds more meaningful disasters to Workers & Resources: Soviet Republic. Note that this script mod is highly experimental.
 
-The script makes the game harder by adding explosions that set source building and building
-in a close vicinity on fire. This adds an additional challange and considerations when building
-harbors, refineries and factory complexex, as it makes it far more dangerous to put buildings
-next to each other.
+The script makes the game harder by adding disasters and industrial accidents with an area of effect, e.g., an explosion that sets buildings in its close vicinity on fire.
 
 Disasters added by the mod:
 * Oil and oil products tank explosions caused by vapors.
-  
+
 Possible future disasters:
 * Refinery explosion.
 * Chemical plant leaks and explosions.
@@ -18,10 +14,10 @@ Possible future disasters:
 
 ## Disasters
 
-### Fuel Tank Vapor Explosion
+### Fuel Tank Explosion
 
-When a fuel tank contains some fuel, bitumen or oil, but less than 50% of its capacity,
-there is chance that the vapors will cause an explosion that will put it and buildings
-in a close vicinity.
+If an oil or fuel tank is full of vapors (less than 80% of the capacity), there is a chance that a fuel tank will explode and will set itself and buildings in the vicinity on fire.
+
 
 [steam_page]: https://store.steampowered.com/app/784150/Workers__Resources_Soviet_Republic/
+[Workers & Resources: Soviet Republic][steam_page]
