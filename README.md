@@ -18,6 +18,10 @@ Possible future disasters:
 
 If an oil or fuel tank is full of vapors (less than 80% of the capacity), there is a chance that a fuel tank will explode and will set itself and buildings in the vicinity on fire.
 
+## Contributors
+
+* [Nyxyx](https://steamcommunity.com/profiles/76561198042251829)
+* [adipat_](https://steamcommunity.com/id/trabant601/)
 
 [steam_page]: https://store.steampowered.com/app/784150/Workers__Resources_Soviet_Republic/
 [Workers & Resources: Soviet Republic][steam_page]
