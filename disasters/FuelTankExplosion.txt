@@ -10,10 +10,10 @@ defineArray(int[100], _fuel_tank_explosion_possible_buildings);
 defineVariable(int, _fuel_tank_explosion_possible_buildings_count);
 defineVariable(int, _fuel_tank_explosion_random_value);
 defineVariable(int, _fuel_tank_explosion_check);
+defineVariable(float, _fuel_tank_usage);
 defineVariable(float, _fuel_tank_explosion_explosion_size);
 
-
-// Find a tank that contains less that stores less than 50% of its fuel/oil/bitumen
+// Find a tank that contains less that stores less than 20% of its fuel/oil/bitumen
 // capacity and stores at least some fuel/oil/bitumen.
 //
 // Returns -1 if no such building exists.
@@ -23,13 +23,13 @@ defineFunction(_FuelTankExplosion_FindValidFuelTank, int) {
 	_fuel_tank_explosion_possible_buildings_count = 0;
 	while (_fuel_tank_explosion_building_index < _fuel_tank_explosion_buildings_count) {
 		_fuel_tank_explosion_checked_building.GetDataByIndex(_fuel_tank_explosion_building_index);
-		// TODO: Equal to 5
+		// Check if the buildings is a warehouse (type 5)
 		if ( _fuel_tank_explosion_checked_building.nType > 4 & _fuel_tank_explosion_checked_building.nType < 6 ) {
 			_fuel_tank_explosion_check = 1;
 			_fuel_tank_explosion_checked_building_resources_actual.GetFromBuilding(_fuel_tank_explosion_building_index);
 			_fuel_tank_explosion_checked_building_resources_capacity.GetCapacityFromBuilding(_fuel_tank_explosion_building_index);
 			if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {				
-				if (_fuel_tank_explosion_checked_building_resources_actual.oil / _fuel_tank_explosion_checked_building_resources_capacity.oil < 0.50) {
+				if (_fuel_tank_explosion_checked_building_resources_actual.oil / _fuel_tank_explosion_checked_building_resources_capacity.oil < 0.20) {
 					if (_fuel_tank_explosion_possible_buildings_count < 100) {
 						_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
 						_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
@@ -43,7 +43,7 @@ defineFunction(_FuelTankExplosion_FindValidFuelTank, int) {
 			}
 			if ( _fuel_tank_explosion_check ) {
 				if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
-					if (_fuel_tank_explosion_checked_building_resources_actual.fuel / _fuel_tank_explosion_checked_building_resources_capacity.fuel < 0.50) {
+					if (_fuel_tank_explosion_checked_building_resources_actual.fuel / _fuel_tank_explosion_checked_building_resources_capacity.fuel < 0.20) {
 						if (_fuel_tank_explosion_possible_buildings_count < 100) {
 							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
 							_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
@@ -67,20 +67,61 @@ defineFunction(_FuelTankExplosion_FindValidFuelTank, int) {
 }
 
 
+// Equation to compute explosion size
+defineVariable(float, _fuel_tank_explosion_total_energy_mj);
+defineVariable(float, _fuel_tank_explosion_total_yield_t_tnt);
+defineVariable(float, _fuel_tank_explosion_size_m);
+defineVariable(int, dpc);
+defineFunction(_FuelTankExplosion_DetermineExplosionSizeEquation,
+	float,
+	float:_fuel_tank_explosion_determine_actual, 
+	float:_fuel_tank_explosion_determine_capacity,
+	float:_fuel_tank_explosion_determine_energy_density_mj_tonne
+	) {
+	// Compute total energy of the explosion MJ/t
+	_fuel_tank_explosion_total_energy_mj = _fuel_tank_explosion_determine_actual * _fuel_tank_explosion_determine_energy_density_mj_tonne;
+	// Get TNT equivalent MJ/t
+	_fuel_tank_explosion_total_yield_t_tnt = _fuel_tank_explosion_total_energy_mj / 4612.070;
+	// Apply utilization/gamification coeficient
+	_fuel_tank_explosion_total_yield_t_tnt = _fuel_tank_explosion_total_yield_t_tnt * ((-(-0.5 * (_fuel_tank_explosion_determine_actual / _fuel_tank_explosion_determine_capacity * 100 ) + 5) ^ 4 + 25 ) / 100);
+	// This is gamified equation that transforms yield to range in which
+	// buildings will be set on fire
+	_fuel_tank_explosion_size_m = 6 * (_fuel_tank_explosion_total_yield_t_tnt ^ 0.46);
+	// Limit the maximum size to 500m
+	if (_fuel_tank_explosion_size_m > 500) {
+		_fuel_tank_explosion_size_m = 500;
+	}
+	return(_fuel_tank_explosion_size_m);
+}
+
 // Determine the size of a explosion
+defineVariable(float, _fuel_tank_explosion_explosion_size_oil);
+defineVariable(float, _fuel_tank_explosion_explosion_size_fuel);
 defineFunction(_FuelTankExplosion_DetermineExplosionSize, float, int:_fuel_tank_explosion_determine_building_index) {
     _fuel_tank_explosion_explosion_size = 0.0;
     _fuel_tank_explosion_checked_building.GetDataByIndex(_fuel_tank_explosion_determine_building_index);
     _fuel_tank_explosion_checked_building_resources_actual.GetFromBuilding(_fuel_tank_explosion_determine_building_index);
     _fuel_tank_explosion_checked_building_resources_capacity.GetCapacityFromBuilding(_fuel_tank_explosion_determine_building_index);
-    if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {				
-        _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
-    }
     if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
-        _fuel_tank_explosion_explosion_size = _fuel_tank_explosion_explosion_size + 70.0;
+		// Gasoline energy density from https://energyeducation.ca/encyclopedia/Energy_density
+		_fuel_tank_explosion_explosion_size_fuel = _FuelTankExplosion_DetermineExplosionSizeEquation(
+			_fuel_tank_explosion_checked_building_resources_actual.fuel,
+			_fuel_tank_explosion_checked_building_resources_capacity.fuel,
+			46000.0
+		);
     }
-    // TODO: Chemicals cause bigger explosion
-    return( _fuel_tank_explosion_explosion_size );
+    if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {
+		// Crude oil energy density from https://energyeducation.ca/encyclopedia/Energy_density
+		_fuel_tank_explosion_explosion_size_oil = _FuelTankExplosion_DetermineExplosionSizeEquation(
+			_fuel_tank_explosion_checked_building_resources_actual.oil,
+			_fuel_tank_explosion_checked_building_resources_capacity.oil,
+			44000.0
+		);
+    }
+	if (_fuel_tank_explosion_explosion_size_oil > _fuel_tank_explosion_explosion_size_fuel) {
+		return( _fuel_tank_explosion_explosion_size_oil );
+	}
+    return( _fuel_tank_explosion_explosion_size_fuel );
 }
 
 
