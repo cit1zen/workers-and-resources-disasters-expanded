@@ -6,9 +6,11 @@ The script makes the game harder by adding disasters and industrial accidents wi
 
 Disasters added by the mod:
 * Oil and oil products tank explosions caused by vapors.
+* Fuel refinery explosions.
+* Grain silo explosions.
+* Alcohol distillery explosions.
 
 Possible future disasters:
-* Refinery explosion.
 * Chemical plant leaks and explosions.
 * Coal mine explosions caused by methane.
 
@@ -17,6 +19,18 @@ Possible future disasters:
 ### Fuel Tank Explosion
 
 If an oil or fuel tank is full of vapors (less than 80% of the capacity), there is a chance that a fuel tank will explode and will set itself and buildings in the vicinity on fire.
+
+### Grain Silo Explosion
+
+Grain silos and warehouses storing grain can explode thanks to grain particles in the air.
+
+### Alcohol Distillery Explosion
+
+Ethanol vapors can cause fires in the distilleries.
+
+### Refinery
+
+Refineries can explode thanks to all the chemicals and oil products.
 
 ## Contributors
 

@@ -1,0 +1,62 @@
+// Grain silo explosion caused by the grain particles in the air.
+defineVariable(float, _grain_silo_explosion_size);
+defineVariable(Building, _grain_silo_building_local);
+defineVariable(Resources, _grain_silo_building_resources_actual_local);
+defineVariable(Resources, _grain_silo_building_resources_capacity_local);
+
+//
+//
+defineFunction(CheckIfValidForGrainSiloExplosion,
+    int,
+    Building: _grain_silo_building,
+    Resources: _grain_silo_building_resources_actual,
+    Resources: _grain_silo_building_resources_capacity,
+) {
+    if (CheckIfValidExplosionTarget(
+        _grain_silo_building_resources_actual.plants,
+        _grain_silo_building_resources_capacity.plants,
+        0.0,
+        0.4,
+        _grain_silo_building.nType,
+        BUILDINGTYPE_STORAGE
+    )) {
+        return(1);
+    }
+    return(0);
+}
+
+//
+//
+defineFunction(SimulateGrainSiloExplosion,
+    void,
+    int: _grain_silo_building_index,
+) {
+    // Get DATA
+    _grain_silo_building_local.GetDataByIndex(_grain_silo_building_index);
+    _grain_silo_building_resources_actual_local.GetFromBuilding(_grain_silo_building_index);
+    _grain_silo_building_resources_capacity_local.GetCapacityFromBuilding(_grain_silo_building_index);
+
+    // Determine explosion size
+    _grain_silo_explosion_size = DetermineIgnitionRadiusOfExplosion(
+        _grain_silo_building_resources_actual_local.plants,
+        _grain_silo_building_resources_capacity_local.plants,
+        20000.0
+    );
+	if (_grain_silo_explosion_size < 1.0) {
+	 	returnVoid();
+	}
+
+	// Create notification
+    // TODO
+	Notification_CreateNewStringPic(
+		"Grain Silo Explosion!",
+		"Unfortunate spark caused an explosion of the grain silo that set surrounding buildings on fire. Emergency services have been called to the site.",
+		"icons/grain_silo_explosion.jpg",
+		_grain_silo_building_local.vPosition
+	);
+
+	// Start fires
+	Explode(_grain_silo_building_local, _grain_silo_explosion_size);
+
+    returnVoid();
+}

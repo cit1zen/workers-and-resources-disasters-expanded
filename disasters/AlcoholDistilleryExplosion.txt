@@ -1,0 +1,68 @@
+// Distillery explosion
+defineVariable(float, _alcohol_distillery_explosion_size);
+defineVariable(Building, _alcohol_distillery_building_local);
+defineVariable(Resources, _alcohol_distillery_building_resources_actual_local);
+defineVariable(Resources, _alcohol_distillery_building_resources_capacity_local);
+
+
+// Distillery is a building that produces alcohol
+// Tanks have to be at most 20% full with alcohol
+//
+defineFunction(CheckIfValidDistilleryExplosion,
+    int,
+    Building: _alcohol_distillery_building,
+    Resources: _alcohol_distillery_building_resources_actual,
+    Resources: _alcohol_distillery_building_resources_capacity,
+    Resources: _alcohol_distillery_building_resources_production
+) {
+    // Buildings is not producing alcohol
+    if (_alcohol_distillery_building_resources_production.alcohol < 0.1) {
+        return(0);
+    }
+    if (CheckIfValidExplosionTarget(
+        _alcohol_distillery_building_resources_actual.alcohol,
+        _alcohol_distillery_building_resources_capacity.alcohol,
+        0.05,
+        0.4,
+        _alcohol_distillery_building.nType,
+        BUILDINGTYPE_FACTORY
+    )) {
+        return(1);
+    }
+    return(0);
+}
+
+
+defineFunction(SimulateDistilleryExplosion,
+    void,
+    int: _alcohol_distillery_building_index,
+) {
+    // Get DATA
+    _alcohol_distillery_building_local.GetDataByIndex(_alcohol_distillery_building_index);
+    _alcohol_distillery_building_resources_actual_local.GetFromBuilding(_alcohol_distillery_building_index);
+    _alcohol_distillery_building_resources_capacity_local.GetCapacityFromBuilding(_alcohol_distillery_building_index);
+
+    // Determine explosion size
+	// Ethanol energy density from https://energyeducation.ca/encyclopedia/Energy_density
+    _alcohol_distillery_explosion_size = DetermineIgnitionRadiusOfExplosion(
+        _alcohol_distillery_building_resources_actual_local.alcohol,
+        _alcohol_distillery_building_resources_capacity_local.alcohol,
+        26800.0
+    );
+	if (_alcohol_distillery_explosion_size < 1.0) {
+	 	returnVoid();
+	}
+
+	// Create notification
+	Notification_CreateNewStringPic(
+		"Alcohol Distillery explosion!",
+		"Alcohol vapors caught on fire and caused explosion in the factory.",
+		"icons/alcohol_distillery.jpg",
+		_alcohol_distillery_building_local.vPosition
+	);
+
+	// Start fires
+	Explode(_alcohol_distillery_building_local, _alcohol_distillery_explosion_size);
+
+    returnVoid();
+}

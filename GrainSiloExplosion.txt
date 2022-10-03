@@ -1,7 +1,7 @@
 include("core/SOVIETInstructions.txt");
 include("core/Math.txt");
 include("core/Explosion.txt");
-include("disasters/FuelTankExplosion.txt");
+include("disasters/GrainSiloExplosion.txt");
 
 
 defineVariable(int, _random_value);
@@ -29,7 +29,7 @@ defineFunction(main, void)
         _building.GetDataByIndex(_building_index);
         _building_actual.GetFromBuilding(_building_index);
         _building_capacity.GetCapacityFromBuilding(_building_index);
-        if (CheckIfValidForFuelTankExplosion(
+        if (CheckIfValidForGrainSiloExplosion(
             _building,
             _building_actual,
             _building_capacity
@@ -56,7 +56,7 @@ defineFunction(main, void)
     Random(_random_value);
     _building_index = _valid_buildings[_random_value % _valid_buildings_current_size];
 
-    SimulateFuelTankExplosion(
+    SimulateGrainSiloExplosion(
         _building_index
     );
     end();

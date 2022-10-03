@@ -1,7 +1,5 @@
-// Function simulates a fiery explosion that sets buildings
-// in explosion radius on fire.
+// Functions that have something to do with explosions
 
-defineVariable(Building, _explosion_exploded_building_data);
 defineVariable(int, _explosion_buildings_count);
 defineVariable(int, _explosion_buildings_index);
 defineVariable(float, _explosion_difference_x);
@@ -13,10 +11,87 @@ defineVariable(int, _explosion_buildings_to_be_set_on_fire_count);
 defineArray(int[200], _explosion_buildings_to_be_set_on_fire);
 defineVariable(int, _explosion_counter);
 
-defineFunction(Explode, void, int:_exploded_building_index, float:_explosion_radius)
-{
+// Determine if the building is a valid explosion target based on several criteria.
+//
+// Args:
+//  _checked_building_igniting_matter_actual:
+//  _checked_building_igniting_matter_capacity:
+//  _minimum_utilization:
+//  _maximum_utilization:
+//  _checked_building_type:
+//  _allowed_type:
+//
+defineVariable(float, _utilization);
+defineFunction(CheckIfValidExplosionTarget,
+	int,
+	float: _checked_building_igniting_matter_actual,
+	float: _checked_building_igniting_matter_capacity,
+	float: _minimum_utilization,
+	float: _maximum_utilization,
+	int: _checked_building_type,
+	int: _allowed_type,
+) {
+	if ( _checked_building_type > _allowed_type ) {
+		return(0);
+	}
+	if ( _checked_building_type < _allowed_type ) {
+		return(0);
+	}
+	_utilization = _checked_building_igniting_matter_actual / _checked_building_igniting_matter_capacity;
+	if (_utilization < _minimum_utilization) {
+		return(0);		
+	}
+	if (_utilization > _maximum_utilization) {
+		return(0);		
+	}
+	return(1);
+}
+
+
+// Determine the radius around the exploded buildings in which buildigs will be set on fire.
+//
+// Args:
+//  _igniting_matter_actual: Actual amount of igniting material in the exploded building.
+//  _igniting_matter_capacity: Maximum/capacity to hold of igniting material in the exploded building.
+//  _igniting_matter_energy_density_mj_tonne: Energy density of ingiting material MJ/t.
+//
+defineVariable(float, _total_energy_mj);
+defineVariable(float, _total_yield_t_tnt);
+defineVariable(float, _explosion_size_m);
+defineFunction(DetermineIgnitionRadiusOfExplosion,
+	float,
+	float: _igniting_matter_actual,
+	float: _igniting_matter_capacity,
+	float: _igniting_matter_energy_density_mj_tonne,
+) {
+	// Compute total energy of the explosion MJ/t
+	_total_energy_mj = _igniting_matter_actual * _igniting_matter_energy_density_mj_tonne;
+	// Get TNT equivalent MJ/t
+	_total_yield_t_tnt = _total_energy_mj / 4612.070;
+	// Apply utilization/gamification coeficient
+	_total_yield_t_tnt = _total_yield_t_tnt * ((-(-0.5 * (_igniting_matter_actual / _igniting_matter_capacity * 100 ) + 5) ^ 4 + 25 ) / 100);
+	// This is gamified equation that transforms yield to range in which
+	// buildings will be set on fire
+	_explosion_size_m = 6 * (_total_yield_t_tnt ^ 0.46);
+	// Limit the maximum size to 500m
+	if (_explosion_size_m > 500) {
+		_explosion_size_m = 500;
+	}
+	return(_explosion_size_m);
+}
+
+// Simulate explosion, basically set the building and its surroundings on fire.
+//
+// Args:
+//  _exploded_building:
+//  _explosion_radius: Radius in which buildings will be set on fire in meters.
+//
+defineFunction(Explode,
+	void,
+	Building: _exploded_building,
+	float: _explosion_radius
+) {
 	// Start fires in the building and buildings around it
-	_explosion_exploded_building_data.GetDataByIndex(_exploded_building_index);
 	Building_GetNumberOfBuildings(_explosion_buildings_count);
 	_explosion_buildings_index = 0;
     _explosion_buildings_to_be_set_on_fire_count = 0;
@@ -26,12 +101,12 @@ defineFunction(Explode, void, int:_exploded_building_index, float:_explosion_rad
 	// is far cheaper than goniometric functions
 	while (_explosion_buildings_index < _explosion_buildings_count) {
 		_explosion_checked_building.GetDataByIndex(_explosion_buildings_index);
-		_explosion_difference_x = _explosion_exploded_building_data.vPosition.x - _explosion_checked_building.vPosition.x;
+		_explosion_difference_x = _exploded_building.vPosition.x - _explosion_checked_building.vPosition.x;
 		if (_explosion_difference_x < 0) {
 			_explosion_difference_x = -1 * _explosion_difference_x;
 		}
 		if (_explosion_difference_x < _explosion_radius) {
-			_explosion_difference_z = _explosion_exploded_building_data.vPosition.z - _explosion_checked_building.vPosition.z;
+			_explosion_difference_z = _exploded_building.vPosition.z - _explosion_checked_building.vPosition.z;
 			if (_explosion_difference_z < 0) {
 				_explosion_difference_z = -1 * _explosion_difference_z;
 			}
@@ -63,5 +138,6 @@ defineFunction(Explode, void, int:_exploded_building_index, float:_explosion_rad
         _explosion_counter = _explosion_counter + 1;
     }
     Script_LeaveCriticalSection();
+
 	returnVoid();
 }

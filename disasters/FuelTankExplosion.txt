@@ -1,157 +1,77 @@
-// Simulate a fuel tank explosion if a fuel tank is full of vapors
-defineVariable(int, _fuel_tank_explosion_exploded_buildings_index);
-defineVariable(Building, _fuel_tank_explosion_exploded_building);
-defineVariable(int, _fuel_tank_explosion_buildings_count);
-defineVariable(int, _fuel_tank_explosion_building_index);
-defineVariable(Building, _fuel_tank_explosion_checked_building);
-defineVariable(Resources, _fuel_tank_explosion_checked_building_resources_actual);
-defineVariable(Resources, _fuel_tank_explosion_checked_building_resources_capacity);
-defineArray(int[100], _fuel_tank_explosion_possible_buildings);
-defineVariable(int, _fuel_tank_explosion_possible_buildings_count);
-defineVariable(int, _fuel_tank_explosion_random_value);
-defineVariable(int, _fuel_tank_explosion_check);
-defineVariable(float, _fuel_tank_usage);
-defineVariable(float, _fuel_tank_explosion_explosion_size);
+// Fuel tank explosion caused by vapors in the air
+defineVariable(float, _fuel_tank_explosion_size);
+defineVariable(Building, _fuel_tank_building_local);
+defineVariable(Resources, _fuel_tank_building_resources_actual_local);
+defineVariable(Resources, _fuel_tank_building_resources_capacity_local);
 
-// Find a tank that contains less that stores less than 20% of its fuel/oil/bitumen
-// capacity and stores at least some fuel/oil/bitumen.
+
+// Valid fuel tank contains between 1 - 20% of fuel capacity 
 //
-// Returns -1 if no such building exists.
-defineFunction(_FuelTankExplosion_FindValidFuelTank, int) {
-	Building_GetNumberOfBuildings(_fuel_tank_explosion_buildings_count);
-	_fuel_tank_explosion_building_index = 0;
-	_fuel_tank_explosion_possible_buildings_count = 0;
-	while (_fuel_tank_explosion_building_index < _fuel_tank_explosion_buildings_count) {
-		_fuel_tank_explosion_checked_building.GetDataByIndex(_fuel_tank_explosion_building_index);
-		// Check if the buildings is a warehouse (type 5)
-		if ( _fuel_tank_explosion_checked_building.nType > 4 & _fuel_tank_explosion_checked_building.nType < 6 ) {
-			_fuel_tank_explosion_check = 1;
-			_fuel_tank_explosion_checked_building_resources_actual.GetFromBuilding(_fuel_tank_explosion_building_index);
-			_fuel_tank_explosion_checked_building_resources_capacity.GetCapacityFromBuilding(_fuel_tank_explosion_building_index);
-			if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {				
-				if (_fuel_tank_explosion_checked_building_resources_actual.oil / _fuel_tank_explosion_checked_building_resources_capacity.oil < 0.20) {
-					if (_fuel_tank_explosion_possible_buildings_count < 100) {
-						_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
-						_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
-					}
-					else () {
-						Random(_fuel_tank_explosion_random_value);
-						_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % 100] = _fuel_tank_explosion_building_index;
-					}
-					_fuel_tank_explosion_check = 0;
-				}
-			}
-			if ( _fuel_tank_explosion_check ) {
-				if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
-					if (_fuel_tank_explosion_checked_building_resources_actual.fuel / _fuel_tank_explosion_checked_building_resources_capacity.fuel < 0.20) {
-						if (_fuel_tank_explosion_possible_buildings_count < 100) {
-							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_possible_buildings_count] = _fuel_tank_explosion_building_index;
-							_fuel_tank_explosion_possible_buildings_count = _fuel_tank_explosion_possible_buildings_count + 1;
-						}
-						else () {
-							Random(_fuel_tank_explosion_random_value);
-							_fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % 100] = _fuel_tank_explosion_building_index;
-						}
-					}
-					_fuel_tank_explosion_check = 0;
-				}
-			}
-		}
-		_fuel_tank_explosion_building_index = _fuel_tank_explosion_building_index + 1;
-	}
-	if (_fuel_tank_explosion_possible_buildings_count < 1) {
-		return (-1);
-	}
-	Random(_fuel_tank_explosion_random_value);
-	return( _fuel_tank_explosion_possible_buildings[_fuel_tank_explosion_random_value % _fuel_tank_explosion_possible_buildings_count] );
-}
-
-
-// Equation to compute explosion size
-defineVariable(float, _fuel_tank_explosion_total_energy_mj);
-defineVariable(float, _fuel_tank_explosion_total_yield_t_tnt);
-defineVariable(float, _fuel_tank_explosion_size_m);
-defineVariable(int, dpc);
-defineFunction(_FuelTankExplosion_DetermineExplosionSizeEquation,
-	float,
-	float:_fuel_tank_explosion_determine_actual, 
-	float:_fuel_tank_explosion_determine_capacity,
-	float:_fuel_tank_explosion_determine_energy_density_mj_tonne
-	) {
-	// Compute total energy of the explosion MJ/t
-	_fuel_tank_explosion_total_energy_mj = _fuel_tank_explosion_determine_actual * _fuel_tank_explosion_determine_energy_density_mj_tonne;
-	// Get TNT equivalent MJ/t
-	_fuel_tank_explosion_total_yield_t_tnt = _fuel_tank_explosion_total_energy_mj / 4612.070;
-	// Apply utilization/gamification coeficient
-	_fuel_tank_explosion_total_yield_t_tnt = _fuel_tank_explosion_total_yield_t_tnt * ((-(-0.5 * (_fuel_tank_explosion_determine_actual / _fuel_tank_explosion_determine_capacity * 100 ) + 5) ^ 4 + 25 ) / 100);
-	// This is gamified equation that transforms yield to range in which
-	// buildings will be set on fire
-	_fuel_tank_explosion_size_m = 6 * (_fuel_tank_explosion_total_yield_t_tnt ^ 0.46);
-	// Limit the maximum size to 500m
-	if (_fuel_tank_explosion_size_m > 500) {
-		_fuel_tank_explosion_size_m = 500;
-	}
-	return(_fuel_tank_explosion_size_m);
-}
-
-// Determine the size of a explosion
-defineVariable(float, _fuel_tank_explosion_explosion_size_oil);
-defineVariable(float, _fuel_tank_explosion_explosion_size_fuel);
-defineFunction(_FuelTankExplosion_DetermineExplosionSize, float, int:_fuel_tank_explosion_determine_building_index) {
-    _fuel_tank_explosion_explosion_size = 0.0;
-    _fuel_tank_explosion_checked_building.GetDataByIndex(_fuel_tank_explosion_determine_building_index);
-    _fuel_tank_explosion_checked_building_resources_actual.GetFromBuilding(_fuel_tank_explosion_determine_building_index);
-    _fuel_tank_explosion_checked_building_resources_capacity.GetCapacityFromBuilding(_fuel_tank_explosion_determine_building_index);
-    if (_fuel_tank_explosion_checked_building_resources_actual.fuel > 0) {
-		// Gasoline energy density from https://energyeducation.ca/encyclopedia/Energy_density
-		_fuel_tank_explosion_explosion_size_fuel = _FuelTankExplosion_DetermineExplosionSizeEquation(
-			_fuel_tank_explosion_checked_building_resources_actual.fuel,
-			_fuel_tank_explosion_checked_building_resources_capacity.fuel,
-			46000.0
-		);
+defineFunction(CheckIfValidForFuelTankExplosion,
+    int,
+    Building: _fuel_tank_building,
+    Resources: _fuel_tank_building_resources_actual,
+    Resources: _fuel_tank_building_resources_capacity,
+) {
+    if (CheckIfValidExplosionTarget(
+        _fuel_tank_building_resources_actual.oil,
+        _fuel_tank_building_resources_capacity.oil,
+        0.01,
+        0.2,
+        _fuel_tank_building.nType,
+        BUILDINGTYPE_STORAGE
+    )) {
+        return(1);
     }
-    if (_fuel_tank_explosion_checked_building_resources_actual.oil > 0) {
-		// Crude oil energy density from https://energyeducation.ca/encyclopedia/Energy_density
-		_fuel_tank_explosion_explosion_size_oil = _FuelTankExplosion_DetermineExplosionSizeEquation(
-			_fuel_tank_explosion_checked_building_resources_actual.oil,
-			_fuel_tank_explosion_checked_building_resources_capacity.oil,
-			44000.0
-		);
+    if (CheckIfValidExplosionTarget(
+        _fuel_tank_building_resources_actual.fuel,
+        _fuel_tank_building_resources_capacity.fuel,
+        0.05,
+        0.4,
+        _fuel_tank_building.nType,
+        BUILDINGTYPE_STORAGE
+    )) {
+        return(1);
     }
-	if (_fuel_tank_explosion_explosion_size_oil > _fuel_tank_explosion_explosion_size_fuel) {
-		return( _fuel_tank_explosion_explosion_size_oil );
-	}
-    return( _fuel_tank_explosion_explosion_size_fuel );
+    return(0);
 }
 
 
-defineFunction(FuelTankExplosion_Simulate, void)
-{
-	// Decide which building should explode
-	// And what is the explosion size
-	_fuel_tank_explosion_exploded_buildings_index = _FuelTankExplosion_FindValidFuelTank();
-	// We were not able to find a valid building
-	if (_fuel_tank_explosion_exploded_buildings_index < 0) {
-	 	returnVoid();
-	}
+defineFunction(SimulateFuelTankExplosion,
+    void,
+    int: _fuel_tank_building_index,
+) {
+    // Get DATA
+    _fuel_tank_building_local.GetDataByIndex(_fuel_tank_building_index);
+    _fuel_tank_building_resources_actual_local.GetFromBuilding(_fuel_tank_building_index);
+    _fuel_tank_building_resources_capacity_local.GetCapacityFromBuilding(_fuel_tank_building_index);
 
     // Determine explosion size
-    _fuel_tank_explosion_explosion_size = _FuelTankExplosion_DetermineExplosionSize(_fuel_tank_explosion_exploded_buildings_index);
-	if (_fuel_tank_explosion_explosion_size < 1.0) {
+	// Gasoline and crude oil energy density from https://energyeducation.ca/encyclopedia/Energy_density
+    _fuel_tank_explosion_size = DetermineIgnitionRadiusOfExplosion(
+        _fuel_tank_building_resources_actual_local.oil,
+        _fuel_tank_building_resources_capacity_local.oil,
+        44000.0
+    );
+    _fuel_tank_explosion_size = _fuel_tank_explosion_size + DetermineIgnitionRadiusOfExplosion(
+        _fuel_tank_building_resources_actual_local.fuel,
+        _fuel_tank_building_resources_capacity_local.fuel,
+        46000.0
+    );
+	if (_fuel_tank_explosion_size < 1.0) {
 	 	returnVoid();
 	}
 
 	// Create notification
-	_fuel_tank_explosion_exploded_building.GetDataByIndex(_fuel_tank_explosion_exploded_buildings_index);
 	Notification_CreateNewStringPic(
-		"Big explosion!",
+		"Fuel tank explosion!",
 		"Vapors in a tank caused an explosion that set the tank and the nearby buildings on fire.",
 		"icons/fuel_tank_explosion.jpg",
-		_fuel_tank_explosion_exploded_building.vPosition
-	)
+		_fuel_tank_building_local.vPosition
+	);
 
 	// Start fires
-	Explode(_fuel_tank_explosion_exploded_buildings_index, _fuel_tank_explosion_explosion_size);
+	Explode(_fuel_tank_building_local, _fuel_tank_explosion_size);
 
     returnVoid();
 }

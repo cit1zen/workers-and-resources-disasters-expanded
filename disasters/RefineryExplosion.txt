@@ -1,0 +1,73 @@
+// Refinery explosion
+defineVariable(float, _refinery_explosion_size);
+defineVariable(Building, _refinery_building_local);
+defineVariable(Resources, _refinery_building_resources_actual_local);
+defineVariable(Resources, _refinery_building_resources_capacity_local);
+
+
+// Refinery is a building that produces fuel
+// Tanks have to be at most 20% full with fuel
+//
+defineFunction(CheckIfValidRefineryExplosion,
+    int,
+    Building: _refinery_building,
+    Resources: _refinery_building_resources_actual,
+    Resources: _refinery_building_resources_capacity,
+    Resources: _refinery_building_resources_production
+) {
+    // Buildings is not producing fuel
+    if (_refinery_building_resources_production.fuel < 0.1) {
+        return(0);
+    }
+    if (CheckIfValidExplosionTarget(
+        _refinery_building_resources_actual.fuel,
+        _refinery_building_resources_capacity.fuel,
+        0.05,
+        0.4,
+        _refinery_building.nType,
+        BUILDINGTYPE_FACTORY
+    )) {
+        return(1);
+    }
+    return(0);
+}
+
+
+defineFunction(SimulateRefineryExplosion,
+    void,
+    int: _refinery_building_index,
+) {
+    // Get DATA
+    _refinery_building_local.GetDataByIndex(_refinery_building_index);
+    _refinery_building_resources_actual_local.GetFromBuilding(_refinery_building_index);
+    _refinery_building_resources_capacity_local.GetCapacityFromBuilding(_refinery_building_index);
+
+    // Determine explosion size
+	// Gasoline energy density from https://energyeducation.ca/encyclopedia/Energy_density
+    _refinery_explosion_size = DetermineIgnitionRadiusOfExplosion(
+        _refinery_building_resources_actual_local.fuel,
+        _refinery_building_resources_capacity_local.fuel,
+        46000.0
+    );
+    // We increase the size the explosion to gamify things a little bit
+    _refinery_explosion_size = _refinery_explosion_size * 2;
+	if (_refinery_explosion_size < 1.0) {
+	 	returnVoid();
+	}
+	if (_refinery_explosion_size > 2000.0) {
+	 	_refinery_explosion_size = 2000.0;
+	}
+
+	// Create notification
+	Notification_CreateNewStringPic(
+		"Refinery explosion!",
+		"Spark in a refining process caused a huge explosion.",
+		"icons/refinery_explosion.jpg",
+		_refinery_building_local.vPosition
+	);
+
+	// Start fires
+	Explode(_refinery_building_local, _refinery_explosion_size);
+
+    returnVoid();
+}
