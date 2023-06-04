@@ -1,0 +1,17 @@
+include("core/SOVIETInstructions.txt");
+defineVariable(char, script);
+
+defineFunction(main, void)
+{
+	Script_Exists("Continous.txt", script);
+	if(script ? 1)
+	{
+		Script_DestroyByName("Continous.txt");
+	}
+	Script_Exists("OneTime.txt", script);
+	if(script ? 1)
+	{
+		Script_DestroyByName("OneTime.txt");
+	}
+	end();
+}

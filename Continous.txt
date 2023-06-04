@@ -47,7 +47,7 @@ defineFunction(main, void)
 
 	// Roll a dice if any disaster will happen
 	Random(_random_value);
-	_random_value = _random_value % 20;
+	_random_value = _random_value % 120;
 	if (_random_value > 1) {
 		Script_Sleep(60.0);
 		end();
@@ -146,16 +146,16 @@ defineFunction(main, void)
 	Random(_random_value);
 	_array_index = _random_value % _valid_buildings_current_size;
     _choosed_building_index = _valid_buildings[_array_index];
-	if (_valid_buildings_disaster_types[_array_index] < (REFINERY_EXPLOSION + 1)) {
+	if (_valid_buildings_disaster_types[_array_index] ? REFINERY_EXPLOSION) {
 		SimulateRefineryExplosion(_choosed_building_index);
 	}
-	elseif (_valid_buildings_disaster_types[_array_index] < (DISTILLERY_EXPLOSION + 1)) {
+	elseif (_valid_buildings_disaster_types[_array_index] ? DISTILLERY_EXPLOSION) {
 		SimulateDistilleryExplosion(_choosed_building_index);
 	}
-	elseif (_valid_buildings_disaster_types[_array_index] < (FUEL_TANK_EXPLOSION + 1)) {
+	elseif (_valid_buildings_disaster_types[_array_index] ? FUEL_TANK_EXPLOSION) {
 		SimulateFuelTankExplosion(_choosed_building_index);
 	}
-	elseif (_valid_buildings_disaster_types[_array_index] < (GRAIN_SILO_EXPLOSION + 1)) {
+	elseif (_valid_buildings_disaster_types[_array_index] ? GRAIN_SILO_EXPLOSION) {
 		SimulateGrainSiloExplosion(_choosed_building_index);
 	}
 

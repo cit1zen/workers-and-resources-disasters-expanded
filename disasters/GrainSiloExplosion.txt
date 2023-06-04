@@ -15,7 +15,7 @@ defineFunction(CheckIfValidForGrainSiloExplosion,
     if (CheckIfValidExplosionTarget(
         _grain_silo_building_resources_actual.plants,
         _grain_silo_building_resources_capacity.plants,
-        0.0,
+        0.1,
         0.4,
         _grain_silo_building.nType,
         BUILDINGTYPE_STORAGE

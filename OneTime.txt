@@ -1,0 +1,153 @@
+include("core/SOVIETInstructions.txt");
+include("core/Math.txt");
+include("core/Explosion.txt");
+include("disasters/AlcoholDistilleryExplosion.txt");
+include("disasters/FuelTankExplosion.txt");
+include("disasters/GrainSiloExplosion.txt");
+include("disasters/RefineryExplosion.txt");
+
+
+defineVariable(int, REFINERY_EXPLOSION);
+defineVariable(int, DISTILLERY_EXPLOSION);
+defineVariable(int, FUEL_TANK_EXPLOSION);
+defineVariable(int, GRAIN_SILO_EXPLOSION);
+defineVariable(int, CHEMICAL_PLANT_EXPLOSION);
+defineVariable(int, GAS_STATION_EXPLOSION);
+
+defineVariable(int, _random_value);
+defineVariable(int, _building_count);
+defineVariable(int, _building_index);
+defineVariable(int, _array_index);
+defineArray(int[200], _valid_buildings);
+defineArray(int[200], _valid_buildings_disaster_types);
+defineVariable(int, _valid_buildings_max_size);
+defineVariable(int, _valid_buildings_current_size);
+defineVariable(Building, _building);
+defineVariable(Resources, _building_actual);
+defineVariable(Resources, _building_capacity);
+defineVariable(Resources, _building_production);
+defineVariable(int, _choosed_building_index);
+
+
+defineFunction(main, void)
+{
+	InitConstants();
+
+	REFINERY_EXPLOSION = 0;
+	DISTILLERY_EXPLOSION = 1;
+	FUEL_TANK_EXPLOSION = 2;
+	GRAIN_SILO_EXPLOSION = 3;
+	// TODO
+	CHEMICAL_PLANT_EXPLOSION = 4;
+	// TODO
+	GAS_STATION_EXPLOSION = 5;
+
+	_valid_buildings_max_size = 200;
+
+	Building_GetNumberOfBuildings(_building_count);
+	_building_index = 0;
+    _valid_buildings_current_size = 0;
+	while (_building_index < _building_count) {
+        // Get data
+        _building.GetDataByIndex(_building_index);
+        _building_actual.GetFromBuilding(_building_index);
+        _building_capacity.GetCapacityFromBuilding(_building_index);
+        _building_production.GetProductionFromBuilding(_building_index);
+		// Check if building can be a victim of a disaster
+        if (CheckIfValidRefineryExplosion(
+            _building,
+            _building_actual,
+            _building_capacity,
+            _building_production
+            )
+        ) {
+            if (_valid_buildings_current_size < _valid_buildings_max_size) {
+                _valid_buildings[_valid_buildings_current_size] = _building_index;
+				_valid_buildings_disaster_types[_valid_buildings_current_size] = REFINERY_EXPLOSION;
+                _valid_buildings_current_size = _valid_buildings_current_size + 1;
+            }
+            else () {
+                Random(_random_value);
+                _valid_buildings[_random_value % _valid_buildings_max_size] = _building_index;
+				_valid_buildings_disaster_types[_random_value % _valid_buildings_max_size] = REFINERY_EXPLOSION;
+            }
+        }
+		elseif (CheckIfValidDistilleryExplosion(
+            _building,
+            _building_actual,
+            _building_capacity,
+            _building_production
+            )
+        ) {
+            if (_valid_buildings_current_size < _valid_buildings_max_size) {
+                _valid_buildings[_valid_buildings_current_size] = _building_index;
+				_valid_buildings_disaster_types[_valid_buildings_current_size] = DISTILLERY_EXPLOSION;
+                _valid_buildings_current_size = _valid_buildings_current_size + 1;
+            }
+            else () {
+                Random(_random_value);
+                _valid_buildings[_random_value % _valid_buildings_max_size] = _building_index;
+				_valid_buildings_disaster_types[_random_value % _valid_buildings_max_size] = DISTILLERY_EXPLOSION;
+            }
+        }
+		elseif (CheckIfValidForFuelTankExplosion(
+            _building,
+            _building_actual,
+            _building_capacity
+            )
+        ) {
+            if (_valid_buildings_current_size < _valid_buildings_max_size) {
+                _valid_buildings[_valid_buildings_current_size] = _building_index;
+				_valid_buildings_disaster_types[_valid_buildings_current_size] = FUEL_TANK_EXPLOSION;
+                _valid_buildings_current_size = _valid_buildings_current_size + 1;
+            }
+            else () {
+                Random(_random_value);
+                _valid_buildings[_random_value % _valid_buildings_max_size] = _building_index;
+				_valid_buildings_disaster_types[_random_value % _valid_buildings_max_size] = FUEL_TANK_EXPLOSION;
+            }
+        }
+		elseif (CheckIfValidForGrainSiloExplosion(
+            _building,
+            _building_actual,
+            _building_capacity
+            )
+        ) {
+            if (_valid_buildings_current_size < _valid_buildings_max_size) {
+                _valid_buildings[_valid_buildings_current_size] = _building_index;
+				_valid_buildings_disaster_types[_valid_buildings_current_size] = GRAIN_SILO_EXPLOSION;
+                _valid_buildings_current_size = _valid_buildings_current_size + 1;
+            }
+            else () {
+                Random(_random_value);
+                _valid_buildings[_random_value % _valid_buildings_max_size] = _building_index;
+				_valid_buildings_disaster_types[_random_value % _valid_buildings_max_size] = GRAIN_SILO_EXPLOSION;
+            }
+        }
+        _building_index = _building_index + 1;
+    }
+
+	// Check if we found any valid buildings
+	if (_valid_buildings_current_size ? 0) {
+		end();
+	}
+
+	// Choose a building and start an appropriate disaster
+	Random(_random_value);
+	_array_index = _random_value % _valid_buildings_current_size;
+    _choosed_building_index = _valid_buildings[_array_index];
+	if (_valid_buildings_disaster_types[_array_index] ? REFINERY_EXPLOSION) {
+		SimulateRefineryExplosion(_choosed_building_index);
+	}
+	elseif (_valid_buildings_disaster_types[_array_index] ? DISTILLERY_EXPLOSION) {
+		SimulateDistilleryExplosion(_choosed_building_index);
+	}
+	elseif (_valid_buildings_disaster_types[_array_index] ? FUEL_TANK_EXPLOSION) {
+		SimulateFuelTankExplosion(_choosed_building_index);
+	}
+	elseif (_valid_buildings_disaster_types[_array_index] ? GRAIN_SILO_EXPLOSION) {
+		SimulateGrainSiloExplosion(_choosed_building_index);
+	}
+
+    end();
+}
